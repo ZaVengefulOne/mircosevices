@@ -1,8 +1,12 @@
+import httpx
+from fastapi import HTTPException
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.models import Playlist, PlaylistTrack
 from app.schemas import PlaylistCreate, PlaylistResponse, PlaylistTrackAdd
 from app.database import SessionLocal
+import os
+
 
 router = APIRouter()
 
@@ -15,7 +19,20 @@ def get_db():
         db.close()
 
 @router.post("/playlist", response_model=PlaylistResponse)
-def create_playlist(playlist: PlaylistCreate, db: Session = Depends(get_db)):
+def create_playlist(playlist: PlaylistCreate, user_id: str, db: Session = Depends(get_db)):
+    # Проверить, существует ли пользователь
+    user_service_host = os.getenv("USER_SERVICE_HOST", "user-service")
+    user_service_port = os.getenv("USER_SERVICE_PORT", "5001")
+    user_service_url = f"http://{user_service_host}:8000/api/user"
+    try:
+        response = httpx.get(f"{user_service_url}/check?user_id={user_id}")
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=400, detail="User service returned an error")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=500, detail=f"Error contacting user service: {exc}")
+
+    # Создать плейлист
     new_playlist = Playlist(name=playlist.name)
     db.add(new_playlist)
     db.commit()

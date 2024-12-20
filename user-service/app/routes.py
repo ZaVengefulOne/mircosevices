@@ -26,9 +26,16 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return UserResponse(id=new_user.id)
 
-@app.get("/api/user", response_model=dict)
+@app.post("/api/auth", response_model=dict)
 def login_user(email: str, password: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email, User.password == password).first()
+    if not user:
+        return {"result": False}
+    return {"result": True}
+
+@app.get("/api/user/check", response_model=dict)
+def check_user(user_id:str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return {"result": False}
     return {"result": True}

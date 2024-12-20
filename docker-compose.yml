@@ -20,8 +20,11 @@ services:
     environment:
       - APP_ENV=development
       - DATABASE_URL=postgresql://user:password@postgres:5432/playlist_db
+      - USER_SERVICE_HOST=user-service
+      - USER_SERVICE_PORT=5001
     depends_on:
       - postgres
+      - user-service
 
   postgres:
     image: postgres:15
